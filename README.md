@@ -17,17 +17,24 @@ Replace this paragraph with your own summary of what your version does.
 
 ## How The System Works
 
-Explain your design in plain language.
+Real-world recommenders generally fall into two camps. **Collaborative filtering** looks at what other users with similar tastes liked — if you and another listener both loved the same three songs, the system surfaces what they played next. **Content-based filtering** ignores other users entirely and instead compares the features of songs themselves to a profile of what the current user enjoys. This project uses **content-based filtering** because it works well even with a small catalog, requires no user history data, and makes the scoring logic easy to understand and explain.
 
-Some prompts to answer:
+The recommender computes a weighted score for every song by comparing its attributes to the user's stated preferences. Songs are ranked by score and the top results are returned as recommendations.
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+**`Song` features used in scoring:**
 
-You can include a simple diagram or bullet list if helpful.
+- `genre` — the musical category (e.g. lofi, pop, rock, ambient)
+- `mood` — the emotional tone (e.g. chill, happy, intense, focused)
+- `energy` — a 0–1 float indicating how high-energy the track feels
+- `acousticness` — a 0–1 float indicating how acoustic (vs. electronic) the track sounds
+- `valence` — a 0–1 float reflecting overall positivity/brightness (used as a tiebreaker)
+
+**`UserProfile` fields that drive recommendations:**
+
+- `favorite_genre` — the genre the user most wants to hear
+- `favorite_mood` — the mood the user is in or prefers
+- `target_energy` — the energy level the user wants (0–1 float)
+- `likes_acoustic` — boolean; if true, acoustic songs are boosted
 
 ---
 
