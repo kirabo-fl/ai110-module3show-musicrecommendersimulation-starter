@@ -38,6 +38,62 @@ The recommender computes a weighted score for every song by comparing its attrib
 
 ---
 
+### Algorithm Recipe
+
+Each song in the catalog is scored against the user profile using this point system:
+
+| Signal | Points | Reasoning |
+|---|---|---|
+| Genre exact match | +2.0 | Genre is the strongest taste signal — a jazz fan rarely wants metal |
+| Mood exact match | +1.5 | Mood reflects the user's current intent and is nearly as important as genre |
+| Energy similarity | +0.0 to +1.0 | `1.0 - abs(target_energy - song.energy)` — full point for a perfect match, zero for opposite ends |
+| Acoustic bonus | +0.5 | Applied only when `likes_acoustic = True` AND `song.acousticness > 0.65` |
+
+**Maximum possible score: 5.0**
+
+Mood is weighted at +1.5 rather than the baseline +1.0 because the dataset shows mood and energy are often the deciding factor between two same-genre songs (e.g., both "Midnight Coding" and "Focus Flow" are lofi, but their moods — chill vs. focused — serve very different user intents). Genre still leads at +2.0 because it is the broadest filter and the most common way users describe their taste.
+
+Songs are sorted by total score descending and the top `k` (default 3) are returned.
+
+---
+
+### How a Song Moves from CSV to Recommendation
+
+```mermaid
+flowchart TD
+    A[Load data/songs.csv] --> B[For each song in catalog]
+    B --> C{Genre matches\nfavorite_genre?}
+    C -- Yes --> D[+2.0 pts]
+    C -- No --> E[+0.0 pts]
+    D --> F{Mood matches\nfavorite_mood?}
+    E --> F
+    F -- Yes --> G[+1.5 pts]
+    F -- No --> H[+0.0 pts]
+    G --> I[Energy similarity\n1.0 - abs target minus song.energy]
+    H --> I
+    I --> J[+0.0 to +1.0 pts]
+    J --> K{likes_acoustic AND\nacousticness > 0.65?}
+    K -- Yes --> L[+0.5 pts]
+    K -- No --> M[+0.0 pts]
+    L --> N[Total score stored\nmax 5.0]
+    M --> N
+    N --> O{More songs?}
+    O -- Yes --> B
+    O -- No --> P[Sort all songs by score descending]
+    P --> Q[Return top K results with explanations]
+```
+
+---
+
+### Expected Biases
+
+- **Genre over-prioritization risk** — with +2.0 for genre, a mediocre genre match will always outrank a near-perfect mood + energy match from a different genre. A user who says they like "pop" may miss excellent songs from adjacent genres like indie pop or synthwave.
+- **Mood rigidity** — the system only rewards an exact mood string match. "Chill" and "relaxed" are semantically similar but score the same as a complete mismatch. This could cause good songs to rank lower than they deserve.
+- **Acoustic binary gap** — the acoustic bonus uses a hard threshold (0.65). A song with acousticness 0.64 gets nothing while one at 0.66 gets +0.5, which is an arbitrary cliff.
+- **Small catalog amplification** — with only 15 songs, any weighting choice has an outsized effect. Results may not generalize to a larger library.
+
+---
+
 ## Getting Started
 
 ### Setup
